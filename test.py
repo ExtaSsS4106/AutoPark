@@ -713,20 +713,6 @@ class App(ctk.CTk):
         cars = self.section(body, "Автомобиль")
         cars.grid(row=0, column=0, sticky="nsew", padx=6, pady=6)
 
-        toolbar = ctk.CTkFrame(cars, fg_color="transparent")
-        toolbar.pack(fill="x", padx=15, pady=(0, 10))
-
-        self.sale_search_entry = ctk.CTkEntry(
-            toolbar, placeholder_text="Поиск автомобиля или VIN", height=38
-        )
-        self.sale_search_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
-        self.sale_search_entry.bind("<Return>", lambda e: self.do_search_sale_cars())
-
-        ctk.CTkButton(
-            toolbar, text="Найти", width=90, height=38,
-            command=self.do_search_sale_cars
-        ).pack(side="left")
-
         self.sale_list = ctk.CTkScrollableFrame(cars, corner_radius=8, height=380)
         self.sale_list.pack(fill="both", expand=True, padx=15, pady=(0, 15))
 
