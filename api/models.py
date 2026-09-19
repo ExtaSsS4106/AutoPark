@@ -21,6 +21,7 @@ class Car(models.Model):
     year       = models.PositiveIntegerField(null=True, blank=True)
     color      = models.CharField(max_length=30, blank=True)
     price      = models.DecimalField(max_digits=12, decimal_places=2)
+    status     = models.CharField(max_length=10, choices=STATUS_CHOICES, default='in_stock')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

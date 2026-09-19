@@ -130,10 +130,13 @@ class SellCar(APIView):
 
         try:
             car = Car.objects.get(id=car_id)
+            if car.status == 'sold':
+                return Response({"error": "Car is already sold"}, status=400)
         except Car.DoesNotExist:
             return Response({"error": "Car not found"}, status=404)
 
-        car.delete()  # Mark the car as sold
+        car.status = 'sold'
+        car.save()
 
         # Create a log entry for the sale
         Log.objects.create(
@@ -157,16 +160,13 @@ class AcceptCar(APIView):
         price = data.get('price')
 
 
-        if not vin:
-            return Response({"error": "Missing vin"}, status=400)
+        if not vin or not model or not price or not year or not color:
+            return Response({"error": "Missing required fields"}, status=400)
 
-        try:
-            car = Car.objects.get(vin=vin)
-        except Car.DoesNotExist:
-            return Response({"error": "Car not found"}, status=404)
-
+        if Car.objects.filter(vin=vin).exists():
+            return Response({"error": "Car with this VIN already exists"}, status=400)
         
-        Car.objects.create(
+        car = Car.objects.create(
             vin=vin,
             model=model,
             year=year,
@@ -193,7 +193,6 @@ class GetCars(APIView):
             response.append({
                                 "car_id": c.id,
                                 "vin": c.vin,
-                                "make": c.make,
                                 "model": c.model,
                                 "year": c.year,
                                 "color": c.color,
@@ -208,7 +207,6 @@ class GetCars(APIView):
         if query:
             cars_ = Car.objects.filter(
                 Q(vin__icontains=query) |
-                Q(make__icontains=query) |
                 Q(model__icontains=query) |
                 Q(year__icontains=query) |
                 Q(color__icontains=query) |
@@ -221,7 +219,6 @@ class GetCars(APIView):
             response.append({
                                 "car_id": c.id,
                                 "vin": c.vin,
-                                "make": c.make,
                                 "model": c.model,
                                 "year": c.year,
                                 "color": c.color,

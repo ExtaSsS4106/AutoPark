@@ -34,7 +34,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         
-        profiles.objects.create(user=user, role=validated_data.get('role', ''))
+        Profile.objects.create(user=user, role=validated_data.get('role', ''))
         return user
 
 class UserSerializer(serializers.ModelSerializer):
