@@ -88,9 +88,9 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
         
 class AllUsers(APIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
     def get(self, request):
-        profiles_ = profiles.objects.all().order_by('-id')
+        profiles_ = Profile.objects.all().order_by('-id')
         response = []
         for p in profiles_:
             response.append({
@@ -105,7 +105,7 @@ class AllUsers(APIView):
         query = data.get('query')
         
         if query:
-            profiles_ = profiles.objects.filter(user__username__icontains=query).order_by('-id')
+            profiles_ = Profile.objects.filter(user__username__icontains=query).order_by('-id')
         else:
             return Response({"error": "Not found"}, status=404)
         response = []
@@ -118,3 +118,113 @@ class AllUsers(APIView):
         return Response(response)
     
 
+class SellCar(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        data = json.loads(request.body)
+        car_id = data.get('car_id')
+
+        if not car_id:
+            return Response({"error": "Missing car_id"}, status=400)
+
+        try:
+            car = Car.objects.get(id=car_id)
+        except Car.DoesNotExist:
+            return Response({"error": "Car not found"}, status=404)
+
+        car.delete()  # Mark the car as sold
+
+        # Create a log entry for the sale
+        Log.objects.create(
+            car=car,
+            action='sale',
+            user=request.user
+        )
+
+        return Response({"message": "Car sold successfully"}, status=200)
+
+
+class AcceptCar(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def post(self, request):
+        data = json.loads(request.body)
+        vin = data.get('vin')
+        model = data.get('model')
+        year = data.get('year')
+        color = data.get('color')
+        price = data.get('price')
+
+
+        if not vin:
+            return Response({"error": "Missing vin"}, status=400)
+
+        try:
+            car = Car.objects.get(vin=vin)
+        except Car.DoesNotExist:
+            return Response({"error": "Car not found"}, status=404)
+
+        
+        Car.objects.create(
+            vin=vin,
+            model=model,
+            year=year,
+            color=color,
+            price=price,
+        )
+
+        # Create a log entry for the acceptance
+        Log.objects.create(
+            car=car,
+            action='accept',
+            user=request.user
+        )
+
+        return Response({"message": "Car accepted successfully"}, status=200)
+
+
+class GetCars(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    def get(self, request):
+        cars_ = Car.objects.all().order_by('-id')
+        response = []
+        for c in cars_:
+            response.append({
+                                "car_id": c.id,
+                                "vin": c.vin,
+                                "make": c.make,
+                                "model": c.model,
+                                "year": c.year,
+                                "color": c.color,
+                                "price": str(c.price)
+                            })
+        return Response(response)
+
+    def post(self, request):
+        data = json.loads(request.body)
+        query = data.get('query')
+        
+        if query:
+            cars_ = Car.objects.filter(
+                Q(vin__icontains=query) |
+                Q(make__icontains=query) |
+                Q(model__icontains=query) |
+                Q(year__icontains=query) |
+                Q(color__icontains=query) |
+                Q(price__icontains=query) 
+            ).order_by('-id')
+        else:
+            return Response({"error": "Not found"}, status=404)
+        response = []
+        for c in cars_:
+            response.append({
+                                "car_id": c.id,
+                                "vin": c.vin,
+                                "make": c.make,
+                                "model": c.model,
+                                "year": c.year,
+                                "color": c.color,
+                                "price": str(c.price)
+                            })
+        return Response(response)
